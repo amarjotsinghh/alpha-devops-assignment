@@ -80,8 +80,26 @@ jobs:
         kubectl rollout status deployment/backend
         kubectl rollout status deployment/frontend
 
-    # Smoke test
+    # Wait for pods to become ready
+    - name: Wait for Pods
+      run: |
+        kubectl wait --for=condition=ready pod -l app=backend --timeout=120s
+        kubectl wait --for=condition=ready pod -l app=frontend --timeout=120s
+
+    # Show cluster status
+    - name: Check Kubernetes Status
+      run: |
+        kubectl get pods
+        kubectl get svc
+        kubectl get ingress
+
+    # Smoke test application
     - name: Smoke Test
       run: |
         URL=$(kubectl get ingress alpha-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+
+        echo "Application URL:"
+        echo "http://$URL"
+
+        echo "Testing backend API..."
         curl -f http://$URL/api/health
