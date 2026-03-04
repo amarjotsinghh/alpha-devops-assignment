@@ -12,6 +12,7 @@ spec:
       labels:
         app: backend
     spec:
+      serviceAccountName: backend-sa
       containers:
         - name: backend
           image: 688567271441.dkr.ecr.ap-southeast-1.amazonaws.com/alpha-devops-dev-backend:latest
