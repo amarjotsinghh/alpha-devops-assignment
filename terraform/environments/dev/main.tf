@@ -49,3 +49,22 @@ module "rds" {
   db_username = "postgres"
   db_password = "postgres123"
 }
+
+module "secrets" {
+  source = "../../modules/secrets"
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  db_username = "postgres"
+  db_password = "postgres123"
+  db_host     = module.rds.db_endpoint
+}
+
+module "iam" {
+  source = "../../modules/iam"
+
+  project_name = var.project_name
+  environment  = var.environment
+  secret_arn   = module.secrets.secret_arn
+}
