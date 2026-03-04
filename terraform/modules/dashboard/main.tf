@@ -112,7 +112,47 @@ resource "aws_cloudwatch_dashboard" "eks_dashboard" {
           region = "ap-southeast-1"
           title  = "EKS Node Network In"
         }
-      }
+      },
+
+      {
+  type   = "metric"
+  x      = 0
+  y      = 12
+  width  = 24
+  height = 6
+
+  properties = {
+    metrics = [
+
+      [
+        "AWS/RDS",
+        "CPUUtilization",
+        "DBInstanceIdentifier",
+        "alpha-devops-dev-postgres"
+      ],
+
+      [
+        "AWS/RDS",
+        "DatabaseConnections",
+        "DBInstanceIdentifier",
+        "alpha-devops-dev-postgres"
+      ],
+
+      [
+        "AWS/RDS",
+        "FreeStorageSpace",
+        "DBInstanceIdentifier",
+        "alpha-devops-dev-postgres"
+      ]
+
+    ]
+
+    period = 300
+    stat   = "Average"
+    region = "ap-southeast-1"
+    title  = "RDS Database Metrics"
+  }
+}
 
     ]
   })
