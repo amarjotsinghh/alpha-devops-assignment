@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Alpha DevOps Assignment</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 80px;
+      background-color: #f8f9fa;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      margin-top: 20px;
+      cursor: pointer;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 5px;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    pre {
+      margin-top: 20px;
+      background: white;
+      padding: 15px;
+      display: inline-block;
+      border-radius: 6px;
+    }
+
+    .architecture {
+      margin-top: 30px;
+      font-size: 15px;
+      color: #555;
+    }
+
+    .author {
+      margin-top: 40px;
+      color: gray;
+      font-size: 14px;
+    }
+  </style>
+
+</head>
+
+<body>
+
+<h1>Alpha DevOps Assignment</h1>
+
+<button onclick="checkHealth()">Check Backend Health</button>
+
+<pre id="result"></pre>
+
+<div class="architecture">
+  Architecture: Frontend → AWS EKS → Backend API → PostgreSQL (RDS)
+</div>
+
+<div class="author">
+  Built by <strong>Amarjot Singh</strong>
+</div>
+
+<script>
+async function checkHealth() {
+  const res = await fetch('/api/health')
+  const data = await res.json()
+  document.getElementById('result').innerText =
+    JSON.stringify(data, null, 2)
+}
+</script>
+
+</body>
+</html>
