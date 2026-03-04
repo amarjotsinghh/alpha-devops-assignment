@@ -68,3 +68,7 @@ module "iam" {
   environment  = var.environment
   secret_arn   = module.secrets.secret_arn
 }
+
+module "logging" {
+  source = "../../modules/logging"
+}
