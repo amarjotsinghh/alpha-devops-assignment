@@ -92,3 +92,35 @@ resource "aws_iam_role_policy_attachment" "alb_controller_attach" {
   role       = aws_iam_role.alb_controller_irsa.name
   policy_arn = aws_iam_policy.alb_controller.arn
 }
+
+resource "aws_iam_role_policy_attachment" "node_cloudwatch_policy" {
+  role       = "alpha-devops-dev-node-role"
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+resource "aws_iam_role" "fluentbit_irsa" {
+  name = "alpha-devops-dev-fluentbit-irsa"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Federated = aws_iam_openid_connect_provider.eks.arn
+        }
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          StringEquals = {
+            "oidc.eks.ap-southeast-1.amazonaws.com/id/69D421A197709F20C2ACD16CBCF3A7D1:sub" = "system:serviceaccount:kube-system:aws-for-fluent-bit"
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "fluentbit_logs" {
+  role       = aws_iam_role.fluentbit_irsa.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+}
