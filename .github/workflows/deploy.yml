@@ -1,4 +1,4 @@
-name: DevOps CI/CD Pipeline
+name: CI-CD Pipeline
 
 on:
   push:
@@ -6,100 +6,144 @@ on:
       - main
 
 jobs:
-  build-deploy:
+  deploy:
 
     runs-on: ubuntu-latest
 
     steps:
 
     # Checkout repo
-    - name: Checkout Code
+    - name: Checkout
       uses: actions/checkout@v4
 
-    # Configure AWS
-    - name: Configure AWS Credentials
+
+    # Configure AWS credentials
+    - name: Configure AWS
       uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
 
+
     # Login to ECR
-    - name: Login to Amazon ECR
+    - name: Login to ECR
       uses: aws-actions/amazon-ecr-login@v2
 
+
     # Build backend image
-    - name: Build Backend Image
+    - name: Build Backend
       run: |
         docker build -t backend ./app/backend
-        docker tag backend:latest \
-        ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_BACKEND_REPO }}:latest
+
 
     # Build frontend image
-    - name: Build Frontend Image
+    - name: Build Frontend
       run: |
         docker build -t frontend ./app/frontend
-        docker tag frontend:latest \
-        ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_FRONTEND_REPO }}:latest
+
+
+    # Scan backend image
+    - name: Scan Backend Image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: backend
+
+
+    # Scan frontend image
+    - name: Scan Frontend Image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: frontend
+
+
+    # Tag backend image
+    - name: Tag Backend
+      run: |
+        docker tag backend \
+        ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_BACKEND_REPO }}:${{ github.sha }}
+
+
+    # Tag frontend image
+    - name: Tag Frontend
+      run: |
+        docker tag frontend \
+        ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_FRONTEND_REPO }}:${{ github.sha }}
+
 
     # Push backend image
-    - name: Push Backend Image
+    - name: Push Backend
       run: |
         docker push \
-        ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_BACKEND_REPO }}:latest
+        ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_BACKEND_REPO }}:${{ github.sha }}
+
 
     # Push frontend image
-    - name: Push Frontend Image
+    - name: Push Frontend
       run: |
         docker push \
-        ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_FRONTEND_REPO }}:latest
+        ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_FRONTEND_REPO }}:${{ github.sha }}
 
-    # Setup kubectl
+
+    # Configure kubectl
     - name: Configure kubectl
       run: |
         aws eks update-kubeconfig \
         --region ${{ secrets.AWS_REGION }} \
         --name ${{ secrets.EKS_CLUSTER_NAME }}
 
-    # Deploy manifests
-    - name: Deploy to Kubernetes
+
+    # Inject image tags into manifests
+    - name: Inject Image Tags
+      run: |
+        BACKEND_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_BACKEND_REPO }}:${{ github.sha }}
+        FRONTEND_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_FRONTEND_REPO }}:${{ github.sha }}
+
+        sed -i "s|BACKEND_IMAGE|$BACKEND_IMAGE|g" k8s/backend/deployment.yaml
+        sed -i "s|FRONTEND_IMAGE|$FRONTEND_IMAGE|g" k8s/frontend/deployment.yaml
+
+
+    # Deploy to Kubernetes
+    - name: Deploy
       run: |
         kubectl apply -f k8s/backend/
         kubectl apply -f k8s/frontend/
-        kubectl apply -f k8s/ingress/       
+        kubectl apply -f k8s/ingress/
+
 
     # Restart deployments
-    - name: Restart Pods
+    - name: Restart Deployments
       run: |
         kubectl rollout restart deployment backend
         kubectl rollout restart deployment frontend
 
+
     # Wait for rollout
-    - name: Wait for Deployments
+    - name: Wait for rollout
       run: |
         kubectl rollout status deployment/backend
         kubectl rollout status deployment/frontend
 
-    # Wait for pods to become ready
-    - name: Wait for Pods
-      run: |
-        kubectl wait --for=condition=ready pod -l app=backend --timeout=120s
-        kubectl wait --for=condition=ready pod -l app=frontend --timeout=120s
 
     # Show cluster status
-    - name: Check Kubernetes Status
+    - name: Check resources
       run: |
         kubectl get pods
         kubectl get svc
         kubectl get ingress
 
-    # Smoke test application
+
+    # Smoke test backend
     - name: Smoke Test
       run: |
         URL=$(kubectl get ingress alpha-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-
-        echo "Application URL:"
-        echo "http://$URL"
-
-        echo "Testing backend API..."
+        echo "Testing API..."
         curl -f http://$URL/api/health
+
+
+    # Rollback if deployment fails
+    - name: Rollback
+      if: failure()
+      run: |
+        kubectl rollout undo deployment backend
+        kubectl rollout undo deployment frontend
