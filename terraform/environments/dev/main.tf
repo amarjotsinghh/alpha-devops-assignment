@@ -72,3 +72,11 @@ module "iam" {
 module "logging" {
   source = "../../modules/logging"
 }
+
+module "dashboard" {
+  source = "../../modules/dashboard"
+
+  region          = "ap-southeast-1"
+  alb_name        = "k8s-default-alphaing"
+  nodegroup_name  = "alpha-devops-dev-nodes"
+}
