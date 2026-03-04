@@ -37,3 +37,15 @@ module "ecr" {
   project_name = var.project_name
   environment  = var.environment
 }
+
+module "rds" {
+  source = "../../modules/rds"
+
+  project_name    = var.project_name
+  environment     = var.environment
+  vpc_id          = module.vpc.vpc_id
+  private_subnets = module.vpc.private_subnets
+
+  db_username = "postgres"
+  db_password = "postgres123"
+}
