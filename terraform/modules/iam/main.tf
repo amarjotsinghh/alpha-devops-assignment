@@ -62,3 +62,33 @@ resource "aws_iam_role_policy_attachment" "backend_secret_access" {
   role       = aws_iam_role.backend_irsa.name
   policy_arn = aws_iam_policy.secret_access.arn
 }
+
+resource "aws_iam_policy" "alb_controller" {
+  name   = "alpha-devops-dev-alb-controller"
+  policy = file("${path.module}/alb_controller_policy.json")
+}
+
+resource "aws_iam_role" "alb_controller_irsa" {
+  name = "alpha-devops-dev-alb-controller-irsa"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.eks.arn
+      }
+      Action = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller"
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "alb_controller_attach" {
+  role       = aws_iam_role.alb_controller_irsa.name
+  policy_arn = aws_iam_policy.alb_controller.arn
+}

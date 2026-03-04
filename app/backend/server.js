@@ -44,3 +44,7 @@ app.get("/db", async (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: "ok" })
+})
