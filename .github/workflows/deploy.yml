@@ -96,8 +96,10 @@ jobs:
         sed -i "s|BACKEND_IMAGE|$BACKEND_IMAGE|g" k8s/backend/deployment.yaml
         sed -i "s|FRONTEND_IMAGE|$FRONTEND_IMAGE|g" k8s/frontend/deployment.yaml
         sed -i "s|VERSION_TAG|${{ github.sha }}|g" k8s/backend/deployment.yaml
-        sed -i "s|value: \"AWS_REGION\"|value: \"${{ secrets.AWS_REGION }}\"|g" k8s/backend/deployment.yaml
-        sed -i "s|DB_SECRET_NAME|${{ secrets.DB_SECRET_NAME }}|g" k8s/backend/deployment.yaml
+
+        sed -i "s|\"AWS_REGION\"|\"${{ secrets.AWS_REGION }}\"|g" k8s/backend/deployment.yaml
+        sed -i "s|\"DB_SECRET_NAME\"|\"${{ secrets.DB_SECRET_NAME }}\"|g" k8s/backend/deployment.yaml
+
         sed -i "s|BACKEND_IRSA_ROLE|${{ secrets.BACKEND_IRSA_ROLE }}|g" k8s/backend/serviceaccount.yaml
 
     # deploy to kubernetes
