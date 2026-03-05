@@ -32,6 +32,9 @@ spec:
             - name: AWS_REGION
               value: "ap-southeast-1"
 
+            - name: APP_VERSION
+              value: "VERSION_TAG"
+
           readinessProbe:
             httpGet:
               path: /ready
