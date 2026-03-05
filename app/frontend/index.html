@@ -33,21 +33,9 @@ button:hover{
     background:#155bb5;
 }
 
-#result{
-    margin-top:25px;
-    background:white;
-    border-radius:8px;
-    padding:15px;
-    display:inline-block;
-    text-align:left;
-    min-width:260px;
-    font-size:16px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.1);
-}
-
 .status-box{
     margin-top:30px;
-    font-size:20px;
+    font-size:22px;
 }
 
 .footer{
@@ -71,8 +59,6 @@ Status: <strong id="status">Unknown</strong><br>
 Version: <strong id="version">Unknown</strong>
 </div>
 
-<pre id="result">Click the button to check backend status</pre>
-
 <div class="footer">
 Built by <strong>Amarjot Singh</strong>
 </div>
@@ -81,11 +67,8 @@ Built by <strong>Amarjot Singh</strong>
 
 async function checkHealth(){
 
-    const resultBox = document.getElementById("result")
     const statusText = document.getElementById("status")
     const versionText = document.getElementById("version")
-
-    resultBox.textContent = "Checking backend..."
 
     try{
 
@@ -95,13 +78,8 @@ async function checkHealth(){
         statusText.textContent = data.status
         versionText.textContent = data.version
 
-        resultBox.textContent =
-        JSON.stringify(data, null, 2)
-
     }
     catch(error){
-
-        resultBox.textContent = "Error connecting to backend"
 
         statusText.textContent = "Error"
         versionText.textContent = "N/A"
