@@ -18,6 +18,7 @@ resource "aws_iam_openid_connect_provider" "eks" {
   ]
 }
 
+# Backend Secrets Manager access policy
 resource "aws_iam_policy" "secret_access" {
   name = "${var.project_name}-${var.environment}-secret-access"
 
@@ -27,15 +28,16 @@ resource "aws_iam_policy" "secret_access" {
       {
         Effect = "Allow"
         Action = [
-          "secretsmanager:GetSecretValue"
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
         ]
-        Resource = var.secret_arn
+        Resource = "${var.secret_arn}*"
       }
     ]
   })
 }
 
-
+# Backend IRSA Role
 resource "aws_iam_role" "backend_irsa" {
   name = "${var.project_name}-${var.environment}-backend-irsa"
 
@@ -63,11 +65,13 @@ resource "aws_iam_role_policy_attachment" "backend_secret_access" {
   policy_arn = aws_iam_policy.secret_access.arn
 }
 
+# ALB Controller Policy
 resource "aws_iam_policy" "alb_controller" {
   name   = "alpha-devops-dev-alb-controller"
   policy = file("${path.module}/alb_controller_policy.json")
 }
 
+# ALB Controller IRSA
 resource "aws_iam_role" "alb_controller_irsa" {
   name = "alpha-devops-dev-alb-controller-irsa"
 
@@ -93,11 +97,13 @@ resource "aws_iam_role_policy_attachment" "alb_controller_attach" {
   policy_arn = aws_iam_policy.alb_controller.arn
 }
 
+# CloudWatch logs for nodes
 resource "aws_iam_role_policy_attachment" "node_cloudwatch_policy" {
   role       = "alpha-devops-dev-node-role"
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
+# FluentBit IRSA
 resource "aws_iam_role" "fluentbit_irsa" {
   name = "alpha-devops-dev-fluentbit-irsa"
 
@@ -112,7 +118,7 @@ resource "aws_iam_role" "fluentbit_irsa" {
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
           StringEquals = {
-            "oidc.eks.ap-southeast-1.amazonaws.com/id/69D421A197709F20C2ACD16CBCF3A7D1:sub" = "system:serviceaccount:kube-system:aws-for-fluent-bit"
+            "${replace(data.aws_eks_cluster.cluster.identity[0].oidc[0].issuer, "https://", "")}:sub" = "system:serviceaccount:kube-system:aws-for-fluent-bit"
           }
         }
       }
