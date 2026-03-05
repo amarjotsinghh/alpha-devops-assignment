@@ -45,10 +45,9 @@ button:hover{
     box-shadow:0 2px 8px rgba(0,0,0,0.1);
 }
 
-.architecture{
-    margin-top:50px;
-    font-size:18px;
-    color:#555;
+.status-box{
+    margin-top:30px;
+    font-size:20px;
 }
 
 .footer{
@@ -67,11 +66,12 @@ button:hover{
 
 <button onclick="checkHealth()">Check Backend Health</button>
 
-<pre id="result">Click the button to check backend status</pre>
-
-<div class="architecture">
-Architecture: Frontend → AWS EKS → Backend API → PostgreSQL (RDS)
+<div class="status-box">
+Status: <strong id="status">Unknown</strong><br>
+Version: <strong id="version">Unknown</strong>
 </div>
+
+<pre id="result">Click the button to check backend status</pre>
 
 <div class="footer">
 Built by <strong>Amarjot Singh</strong>
@@ -82,6 +82,8 @@ Built by <strong>Amarjot Singh</strong>
 async function checkHealth(){
 
     const resultBox = document.getElementById("result")
+    const statusText = document.getElementById("status")
+    const versionText = document.getElementById("version")
 
     resultBox.textContent = "Checking backend..."
 
@@ -90,6 +92,9 @@ async function checkHealth(){
         const response = await fetch("/api/health")
         const data = await response.json()
 
+        statusText.textContent = data.status
+        versionText.textContent = data.version
+
         resultBox.textContent =
         JSON.stringify(data, null, 2)
 
@@ -97,6 +102,9 @@ async function checkHealth(){
     catch(error){
 
         resultBox.textContent = "Error connecting to backend"
+
+        statusText.textContent = "Error"
+        versionText.textContent = "N/A"
 
     }
 
