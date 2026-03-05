@@ -7,30 +7,36 @@ spec:
   selector:
     matchLabels:
       app: backend
+
   template:
     metadata:
       labels:
         app: backend
+
     spec:
       serviceAccountName: backend-sa
+
       containers:
         - name: backend
           image: BACKEND_IMAGE
+
           ports:
             - containerPort: 3000
+
           env:
-            - name: DB_HOST
-              value: "alpha-devops-dev-postgres.cdwm44ckm8yi.ap-southeast-1.rds.amazonaws.com"
-            - name: DB_USER
-              value: "postgres"
-            - name: DB_PASSWORD
-              value: "postgres123"
+            - name: DB_SECRET_NAME
+              value: "alpha-devops-dev-db-secret"
+
+            - name: AWS_REGION
+              value: "ap-southeast-1"
+
           readinessProbe:
             httpGet:
               path: /ready
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 5
+
           livenessProbe:
             httpGet:
               path: /health
