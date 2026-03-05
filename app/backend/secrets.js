@@ -17,6 +17,7 @@ async function getDbSecret() {
   }
 
   return JSON.parse(response.SecretString);
+
 }
 
 module.exports = { getDbSecret };

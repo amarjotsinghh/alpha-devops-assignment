@@ -13,6 +13,7 @@ spec:
     - http:
         paths:
 
+          # Backend API routes
           - path: /api
             pathType: Prefix
             backend:
@@ -21,6 +22,31 @@ spec:
                 port:
                   number: 80
 
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 80
+
+          - path: /ready
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 80
+
+          - path: /db
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 80
+
+          # Frontend routes
           - path: /
             pathType: Prefix
             backend:

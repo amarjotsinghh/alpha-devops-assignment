@@ -7,7 +7,7 @@ const port = 3000;
 
 let pool;
 
-// Initialize DB connection using AWS Secrets Manager
+// Initialize DB connection
 async function initDb() {
 
   const secret = await getDbSecret();
@@ -25,27 +25,48 @@ async function initDb() {
     }
   });
 
+  await pool.query("SELECT 1");
+
   console.log("Connected to RDS database");
 }
 
+
+// Health endpoint (required by assignment)
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+// Optional API health
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+// Readiness endpoint (required by assignment)
 app.get("/ready", async (req, res) => {
+
   try {
+
     await pool.query("SELECT 1");
-    res.json({ ready: true });
+
+    res.json({
+      ready: true,
+      database: "connected"
+    });
+
   } catch (err) {
-    res.status(500).json({ ready: false });
+
+    res.status(500).json({
+      ready: false,
+      database: "disconnected"
+    });
+
   }
+
 });
 
+// Simple DB query endpoint
 app.get("/db", async (req, res) => {
+
   try {
 
     const result = await pool.query("SELECT NOW()");
@@ -61,9 +82,11 @@ app.get("/db", async (req, res) => {
     });
 
   }
+
 });
 
-// Start server after DB init
+
+// Start server
 async function startServer() {
 
   try {
