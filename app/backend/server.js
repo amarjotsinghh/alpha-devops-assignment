@@ -1,21 +1,38 @@
 const express = require("express");
 const { Pool } = require("pg");
+const { getDbSecret } = require("./secrets");
 
 const app = express();
 const port = 3000;
 
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: "postgres",
-  port: 5432,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
+let pool;
+
+// Initialize DB connection using AWS Secrets Manager
+async function initDb() {
+
+  const secret = await getDbSecret();
+
+  const host = secret.host.split(":")[0];
+
+  pool = new Pool({
+    host: host,
+    user: secret.username,
+    password: secret.password,
+    database: secret.dbname,
+    port: parseInt(secret.port),
+    ssl: {
+      rejectUnauthorized: false
+    }
+  });
+
+  console.log("Connected to RDS database");
+}
 
 app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
@@ -30,21 +47,39 @@ app.get("/ready", async (req, res) => {
 
 app.get("/db", async (req, res) => {
   try {
+
     const result = await pool.query("SELECT NOW()");
+
     res.json({
-      database_time: result.rows[0],
+      database_time: result.rows[0]
     });
+
   } catch (err) {
+
     res.status(500).json({
-      error: err.message,
+      error: err.message
     });
+
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+// Start server after DB init
+async function startServer() {
 
-app.get('/api/health', (req, res) => {
-  res.json({ status: "ok" })
-})
+  try {
+
+    await initDb();
+
+    app.listen(port, () => {
+      console.log(`Server running on port ${port}`);
+    });
+
+  } catch (err) {
+
+    console.error("Failed to start server:", err);
+
+  }
+
+}
+
+startServer();
