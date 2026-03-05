@@ -458,3 +458,205 @@ Verify rollout status:
 kubectl rollout status deployment/backend
 ```
 
+---
+
+## Deploying in a new AWS account (Alpha)
+
+This section explains how to reproduce the infrastructure and deploy the application in a new AWS account.
+
+---
+
+### Prerequisites
+
+Install the following tools:
+
+- AWS CLI
+- Terraform >= 1.5
+- kubectl
+- Docker
+- Helm
+
+Configure AWS credentials:
+
+```bash
+aws configure
+```
+
+---
+
+### Required Terraform Variables
+
+Create a `terraform.tfvars` file inside:
+
+```
+terraform/environments/dev/
+```
+
+Example configuration:
+
+```hcl
+aws_region   = "ap-southeast-1"
+project_name = "alpha-devops"
+environment  = "dev"
+vpc_cidr     = "10.0.0.0/16"
+
+db_username  = "postgres"
+db_password  = "postgres123"
+```
+
+---
+
+### Required AWS Permissions (High Level)
+
+The AWS user or role executing Terraform should have permissions for:
+
+- VPC
+- EC2
+- EKS
+- IAM
+- ECR
+- RDS
+- Secrets Manager
+- CloudWatch
+- Elastic Load Balancing (ALB)
+
+Administrator access can also be used for testing purposes.
+
+---
+
+### CI/CD Variables
+
+The CI/CD pipeline requires the following GitHub Secrets:
+
+| Secret | Description |
+|------|------|
+| AWS_ACCESS_KEY_ID | AWS access key |
+| AWS_SECRET_ACCESS_KEY | AWS secret key |
+| AWS_REGION | AWS region |
+| AWS_ACCOUNT_ID | AWS account ID |
+| EKS_CLUSTER_NAME | EKS cluster name |
+| ECR_BACKEND_REPO | Backend ECR repository |
+| ECR_FRONTEND_REPO | Frontend ECR repository |
+| DB_SECRET_NAME | Secrets Manager secret name |
+| BACKEND_IRSA_ROLE | IAM role used by backend service account |
+
+---
+
+### Step 1 — Deploy Infrastructure (Terraform)
+
+Navigate to Terraform environment:
+
+```bash
+cd terraform/environments/dev
+```
+
+Initialize Terraform:
+
+```bash
+terraform init
+```
+
+Review infrastructure plan:
+
+```bash
+terraform plan
+```
+
+Create infrastructure:
+
+```bash
+terraform apply
+```
+
+This will provision:
+
+- VPC with public and private subnets
+- EKS cluster with managed node group
+- ECR repositories
+- RDS PostgreSQL database
+- IAM roles and IRSA configuration
+- AWS Secrets Manager secret
+- CloudWatch logging
+- CloudWatch dashboard
+
+---
+
+### Step 2 — Configure Kubernetes Access
+
+Configure `kubectl`:
+
+```bash
+aws eks update-kubeconfig \
+--region <region> \
+--name <cluster-name>
+```
+
+Verify cluster access:
+
+```bash
+kubectl get nodes
+```
+
+---
+
+### Step 3 — Install Required Cluster Components
+
+Install AWS Load Balancer Controller and Fluent Bit for logging.
+
+```bash
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update
+```
+
+Install AWS Load Balancer Controller and Fluent Bit as required.
+
+---
+
+### Step 4 — Deploy Application
+
+Deploy Kubernetes manifests:
+
+```bash
+kubectl apply -f k8s/backend/
+kubectl apply -f k8s/frontend/
+kubectl apply -f k8s/ingress/
+```
+
+Verify resources:
+
+```bash
+kubectl get pods
+kubectl get svc
+kubectl get ingress
+```
+
+Access the application using the ALB DNS hostname.
+
+---
+
+### Step 5 — Verify Deployment
+
+Check backend health endpoint:
+
+```
+http://<ALB-DNS>/api/health
+```
+
+Ensure pods are running:
+
+```bash
+kubectl get pods
+```
+
+---
+
+### Cleanup (Destroy Infrastructure)
+
+To remove all created resources:
+
+```bash
+cd terraform/environments/dev
+terraform destroy
+```
+
+This command deletes all AWS resources created by Terraform.
