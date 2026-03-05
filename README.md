@@ -1,24 +1,32 @@
-## Live Application
+## Submission Note
 
-Frontend
-
+### Frontend URL (ALB endpoint)
 http://k8s-default-alphaing-e4acd881d2-1206483414.ap-southeast-1.elb.amazonaws.com
 
-Backend Health Check
-
+### Backend Health Endpoint
 http://k8s-default-alphaing-e4acd881d2-1206483414.ap-southeast-1.elb.amazonaws.com/api/health
 
+### CI/CD Used
+GitHub Actions
 
+### How Backend Connects to RDS
+The backend retrieves database credentials from **AWS Secrets Manager** using **IRSA (IAM Role for Service Accounts)**.  
+These credentials are then used by the application to securely connect to the **RDS PostgreSQL instance**.
 
-The goal is to build and deploy a demo web application using:
+### CloudWatch Dashboard
+**Dashboard Name:** `alpha-devops-dashboard` 
 
-* **Terraform** for infrastructure provisioning
-* **Amazon EKS** for Kubernetes orchestration
-* **Amazon RDS** for the database
-* **AWS Secrets Manager** for secure credential storage
-* **IRSA (IAM Roles for Service Accounts)** for secure pod access to AWS
-* **GitHub Actions** for CI/CD
-* **CloudWatch** for logs, metrics, and dashboards
+The dashboard includes metrics for:
+- **ALB:** RequestCount, TargetResponseTime
+- **RDS:** CPUUtilization, DatabaseConnections, FreeStorageSpace  
+- **EKS Nodes:** CPU and memory utilization
+
+### Assumptions
+- Deployment uses a single **dev environment**.
+- AWS credentials are provided via **CI/CD GitHub secrets**.
+- Kubernetes manifests are deployed using **kubectl in the CI/CD pipeline**.
+- **AWS Load Balancer Controller** and **FluentBit** are installed manually after cluster creation.
+
 
 ---
 
