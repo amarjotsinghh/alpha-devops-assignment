@@ -21,7 +21,6 @@ module "vpc" {
   vpc_cidr     = var.vpc_cidr
 }
 
-
 module "eks" {
   source = "../../modules/eks"
 
@@ -46,8 +45,8 @@ module "rds" {
   vpc_id          = module.vpc.vpc_id
   private_subnets = module.vpc.private_subnets
 
-  db_username = "postgres"
-  db_password = "postgres123"
+  db_username = var.db_username
+  db_password = var.db_password
 }
 
 module "secrets" {
@@ -56,8 +55,8 @@ module "secrets" {
   project_name = var.project_name
   environment  = var.environment
 
-  db_username = "postgres"
-  db_password = "postgres123"
+  db_username = var.db_username
+  db_password = var.db_password
   db_host     = module.rds.db_endpoint
 }
 
@@ -76,7 +75,7 @@ module "logging" {
 module "dashboard" {
   source = "../../modules/dashboard"
 
-  region          = "ap-southeast-1"
-  alb_name        = "k8s-default-alphaing"
-  nodegroup_name  = "alpha-devops-dev-nodes"
+  region         = var.aws_region
+  alb_name       = "k8s-default-alphaing"
+  nodegroup_name = "${var.project_name}-${var.environment}-nodes"
 }
