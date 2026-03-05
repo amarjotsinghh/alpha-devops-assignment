@@ -108,7 +108,7 @@ jobs:
         FRONTEND_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_FRONTEND_REPO }}:${{ github.sha }}
         sed -i "s|BACKEND_IMAGE|$BACKEND_IMAGE|g" k8s/backend/deployment.yaml
         sed -i "s|FRONTEND_IMAGE|$FRONTEND_IMAGE|g" k8s/frontend/deployment.yaml
-        sed -i "s/VERSION_TAG/${{ github.sha }}/g" k8s/backend-deployment.yaml
+        sed -i "s/VERSION_TAG/${{ github.sha }}/g" k8s/backend/deployment.yaml
 
 
     # deploy to kubernetes
